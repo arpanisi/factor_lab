@@ -1,0 +1,42 @@
+# Secrets
+.env
+*.env
+.pgpass
+
+# Python caches/build artifacts
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+build/
+dist/
+*.egg-info/
+
+# Docs
+docs/
+
+# Models
+models/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Generated run artifacts
+outputs/
+runs/
+checkpoints/
+*.jsonl
+
+# Data files (regenerate via the scripts in src/data/; folder structure is kept via .gitkeep)
+data/**/*.pkl
+data/**/*.parquet
+
+# OS/editor files
+.DS_Store
+.idea/
+.vscode/

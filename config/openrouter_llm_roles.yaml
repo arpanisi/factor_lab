@@ -1,0 +1,104 @@
+# OpenRouter LLM role registry for Factor Lab.
+#
+# There are two separate LLM locations in the pipeline:
+# 1. oracle_llm: scenario -> raw seed candidates
+# 2. miner_llm: seed task -> mutated/generated candidate factors
+#
+# Constraint:
+# - Non-OpenAI models only.
+# - Prefer strong-but-cheap models for repeated baseline rollouts.
+# - Prices are USD per 1M tokens from OpenRouter pages/search results checked on 2026-07-30.
+
+oracle_llm:
+  purpose: Generate high-quality initial seed candidates from a structured factor scenario.
+  default_model: deepseek/deepseek-chat-v3.1
+  budget_model: qwen/qwen3-235b-a22b-2507
+  stronger_model: z-ai/glm-4.5
+  recommended_count: 24
+  models:
+    - name: DeepSeek V3.1
+      slug: deepseek/deepseek-chat-v3.1
+      provider_family: deepseek
+      role_fit: Strong scenario-to-factor ideation with cheap reasoning.
+      context_tokens: 164000
+      input_usd_per_million_tokens: 0.25
+      output_usd_per_million_tokens: 0.95
+
+    - name: Qwen3 235B A22B Instruct 2507
+      slug: qwen/qwen3-235b-a22b-2507
+      provider_family: qwen
+      role_fit: Very cheap large MoE model for generating many seed candidates.
+      context_tokens: 262000
+      input_usd_per_million_tokens: 0.09
+      output_usd_per_million_tokens: 0.55
+
+    - name: GLM 4.5
+      slug: z-ai/glm-4.5
+      provider_family: z-ai
+      role_fit: Stronger agentic/reasoning comparator for smaller seed-generation runs.
+      context_tokens: 131000
+      input_usd_per_million_tokens: 0.60
+      output_usd_per_million_tokens: 2.20
+
+    - name: Kimi K2.7 Code
+      slug: moonshotai/kimi-k2.7-code
+      provider_family: moonshotai
+      role_fit: Coding-oriented comparator for DSL expression construction.
+      context_tokens: 262000
+      input_usd_per_million_tokens: 0.74
+      output_usd_per_million_tokens: 3.50
+
+miner_llm:
+  purpose: Mutate/improve a seed expression for a seeded factor-mining task.
+  default_model: qwen/qwen3-235b-a22b-2507
+  budget_model: deepseek/deepseek-chat
+  stronger_model: deepseek/deepseek-chat-v3.1
+  recommended_group_size: 4
+  models:
+    - name: Qwen3 235B A22B Instruct 2507
+      slug: qwen/qwen3-235b-a22b-2507
+      provider_family: qwen
+      role_fit: Cheap strong default for many miner rollouts.
+      context_tokens: 262000
+      input_usd_per_million_tokens: 0.09
+      output_usd_per_million_tokens: 0.55
+
+    - name: DeepSeek V3
+      slug: deepseek/deepseek-chat
+      provider_family: deepseek
+      role_fit: Low-cost broad baseline for miner rollouts.
+      context_tokens: 131000
+      input_usd_per_million_tokens: 0.2002
+      output_usd_per_million_tokens: 0.8001
+
+    - name: DeepSeek V3.1
+      slug: deepseek/deepseek-chat-v3.1
+      provider_family: deepseek
+      role_fit: Stronger miner baseline when local rollout quality matters.
+      context_tokens: 164000
+      input_usd_per_million_tokens: 0.25
+      output_usd_per_million_tokens: 0.95
+
+    - name: GLM 4.5 Air
+      slug: z-ai/glm-4.5-air
+      provider_family: z-ai
+      role_fit: Cheap agentic comparator.
+      context_tokens: 131000
+      input_usd_per_million_tokens: 0.13
+      output_usd_per_million_tokens: 0.85
+
+    - name: Qwen3 235B A22B
+      slug: qwen/qwen3-235b-a22b
+      provider_family: qwen
+      role_fit: Reasoning comparator, more expensive than 2507 instruct.
+      context_tokens: 131000
+      input_usd_per_million_tokens: 0.455
+      output_usd_per_million_tokens: 1.82
+
+excluded:
+  - slug: openai/*
+    reason: User explicitly requested not to use OpenAI.
+  - slug: anthropic/*
+    reason: Strong but not cheap enough for broad baseline rollouts.
+  - slug: x-ai/grok-4.5
+    reason: Strong but materially more expensive than Qwen/DeepSeek/GLM options.

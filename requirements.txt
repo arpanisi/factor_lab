@@ -1,0 +1,12 @@
+accelerate
+bitsandbytes
+datasets
+omegaconf
+peft
+pyarrow
+PyYAML
+ray
+torch
+transformers
+trl
+verl

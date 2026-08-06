@@ -1,0 +1,28 @@
+model:
+  base_model: Qwen/Qwen2.5-7B-Instruct
+  quantization: 4bit_nf4
+  adapter: qlora
+
+grpo:
+  script: factor_lab.training.train_grpo_qlora
+  objective: executable_factor_reward
+  reward_source: factor_lab.training.grpo_reward.make_grpo_reward_func
+  reward_components:
+    - DSL validity
+    - daily cross-sectional RankIC
+    - IC
+    - ICIR
+    - long-short spread diagnostics
+    - DiCo diversity/complementarity archive reward
+  learning_rate: 0.000005
+  max_steps: 200
+  per_device_train_batch_size: 1
+  gradient_accumulation_steps: 8
+  num_generations: 2
+  beta: 0.02
+  loss_type: dapo
+
+data:
+  local_crypto_panel: ClassProject/data/crypto_panel_clean.pkl
+  wrds_crsp_target: daily_cross_sectional_rankic
+  taq_target: intraday_microstructure_direction

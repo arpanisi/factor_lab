@@ -1,0 +1,61 @@
+# Paper-scale Factor Lab GRPO target.
+# This intentionally disables LoRA to match QuantEvolver's default full-FT path.
+
+hardware:
+  gpu: 8x NVIDIA A100
+  note: Full-parameter GRPO target. The previous QLoRA path is debug-only.
+
+model:
+  name_or_path: /workspace/models/Qwen3-14B
+  lora_rank: 0
+  full_parameter_finetuning: true
+  trust_remote_code: true
+  gradient_checkpointing: true
+  remove_padding: true
+
+data:
+  train_parquet: outputs/verl/crypto_grpo_tasks.parquet
+  val_parquet: outputs/verl/crypto_grpo_val_tasks.parquet
+  crypto_panel: data/crypto/crypto_panel_clean.pkl
+  tickers: BTC-USD,ETH-USD,XRP-USD
+  max_prompt_length: 1536
+  max_response_length: 256
+
+reward:
+  # bridge_class/scalar_function are documentation only - verl_main.py imports
+  # FactorLabVerlRewardBridge directly rather than reading these strings.
+  bridge_class: src.verl_integration.reward_bridge.FactorLabVerlRewardBridge
+  scalar_function: src.verl_integration.reward_function.reward_fn
+  archive_jsonl: outputs/verl/qwen3_14b_fullft/mined_factors.jsonl
+  reward_log_jsonl: outputs/verl/qwen3_14b_fullft/reward_rollouts.jsonl
+
+verl:
+  algorithm:
+    adv_estimator: grpo
+    use_kl_in_reward: false
+  actor_rollout_ref:
+    rollout:
+      name: vllm
+      n: 8
+      temperature: 1.0
+      top_p: 0.95
+      top_k: 50
+      tensor_model_parallel_size: 1
+      gpu_memory_utilization: 0.80
+    actor:
+      strategy: fsdp
+      use_kl_loss: true
+      kl_loss_coef: 0.001
+      kl_loss_type: low_var_kl
+      ppo_mini_batch_size: 256
+      ppo_micro_batch_size_per_gpu: 1
+      optim:
+        lr: 0.000005
+      fsdp_config:
+        param_offload: false
+        optimizer_offload: true
+  trainer:
+    nnodes: 1
+    n_gpus_per_node: 8
+    save_freq: 20
+    total_epochs: 1

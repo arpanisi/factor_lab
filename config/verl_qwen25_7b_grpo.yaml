@@ -1,0 +1,51 @@
+# Deprecated debug config.
+#
+# This was the earlier Qwen2.5/QLoRA-style target. It is not the current
+# paper-scale run target. Use `verl_qwen3_14b_fullft_a100.yaml` for the
+# 8x A100 full-parameter GRPO path.
+#
+# Original note: distributed GRPO debug target.
+#
+# This is an operator-facing config for the Factor Lab Verl path. Exact Verl
+# launcher keys can differ by installed Verl commit, so keep this file as the
+# single source of run parameters and map it into the launch command used on the
+# rented server.
+
+hardware:
+  gpu: deprecated debug target
+  cpu: 160x Intel Xeon cores
+  ram: 1.8 TiB
+
+model:
+  name_or_path: /workspace/models/Qwen2.5-7B-Instruct
+  qlora_4bit: true
+  lora_r: 16
+  lora_alpha: 32
+  lora_dropout: 0.05
+
+data:
+  train_parquet: factor_lab/outputs/verl/crypto_grpo_tasks.parquet
+  crypto_panel: data/crypto_panel_clean.pkl
+  tickers: BTC-USD,ETH-USD,XRP-USD
+
+reward:
+  function: factor_lab.verl.reward_function.reward_fn
+  archive_jsonl: factor_lab/outputs/verl/mined_factors.jsonl
+  reward_log_jsonl: factor_lab/outputs/verl/reward_rollouts.jsonl
+  metric_source:
+    - Factor DSL validation
+    - executable backtest oracle
+    - RankIC/IC/ICIR-style score
+    - DiCo diversity/complementarity reward
+
+grpo:
+  generations_per_prompt: 8
+  max_prompt_length: 1536
+  max_completion_length: 256
+  temperature: 1.0
+  top_p: 0.95
+  top_k: 50
+  learning_rate: 0.000005
+  beta: 0.02
+  save_steps: 20
+  max_steps: 200
