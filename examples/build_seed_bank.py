@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from src.data import adapt_crypto_ohlcv, adapt_crsp_dsf_v2
+from src.data import adapt_crsp_dsf_v2, adapt_crypto_ohlcv, verify_crypto_panel
 from examples.dsl_smoke_test import (
     DEFAULT_CRYPTO_PANEL,
     fetch_wrds_crsp_dsf_v2_sample,
@@ -25,11 +25,8 @@ from src.seeds.oracle import (
 def crypto_frames_from_panel(panel: dict, tickers: tuple[str, ...] | None = None) -> dict[str, pd.DataFrame]:
     """Convert saved crypto panel dict into per-asset DSL-ready frames."""
 
+    verify_crypto_panel(panel, tickers=tickers)
     required = ["open", "high", "low", "close", "volume"]
-    missing = [key for key in required if key not in panel]
-    if missing:
-        raise ValueError(f"crypto panel missing keys: {missing}")
-
     available = tuple(str(col) for col in panel["close"].columns)
     selected = tickers or available
     frames = {}
@@ -51,7 +48,7 @@ def build_crypto_cross_sectional_seed_bank(
 ) -> dict:
     """Build a cross-sectional crypto seed bank from the saved project panel."""
 
-    panel = pd.read_pickle(panel_path)
+    panel = verify_crypto_panel(panel_path, tickers=tickers)
     frames = crypto_frames_from_panel(panel, tickers=tickers)
     close = panel["close"]
     windows = [
@@ -71,7 +68,7 @@ def build_crypto_cross_sectional_seed_bank(
         windows=windows,
         raw_candidates=raw_candidates,
         min_history=30,
-        min_assets=max(3, min(5, len(frames))),
+        min_assets=8,
         pool_config=SeedPoolConfig(top_k=top_k, quality_threshold=quality_threshold),
     )
     return {"result": result, "asset_count": len(frames)}
@@ -128,7 +125,7 @@ def main() -> int:
     parser.add_argument("--candidate-source", choices=("template", "openrouter", "file"), default="template")
     parser.add_argument("--oracle-output-file", type=Path)
     parser.add_argument("--oracle-count", type=int, default=24)
-    parser.add_argument("--openrouter-model", default="deepseek/deepseek-chat")
+    parser.add_argument("--openrouter-model", default="deepseek/deepseek-chat-v3.1")
     parser.add_argument("--wrds-crsp", action="store_true", help="also build a tiny live WRDS CRSP seed bank")
     parser.add_argument("--wrds-permno", type=int, default=14593)
     parser.add_argument("--wrds-start", default="2023-01-01")

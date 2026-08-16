@@ -11,6 +11,9 @@ import pandas as pd
 from src.scoring.series import evaluate_factor_series, forward_returns
 
 
+MIN_CROSS_SECTIONAL_ASSETS = 8
+
+
 @dataclass(frozen=True)
 class CrossSectionalScore:
     """Cross-sectional factor ranking metrics."""
@@ -33,9 +36,13 @@ def score_cross_sectional_rankic(
     price_col: str,
     horizon: int = 1,
     min_history: int = 1,
-    min_assets: int = 3,
+    min_assets: int = MIN_CROSS_SECTIONAL_ASSETS,
 ) -> CrossSectionalScore:
     """Score a factor by average cross-sectional RankIC over time."""
+
+    min_assets = max(MIN_CROSS_SECTIONAL_ASSETS, int(min_assets))
+    if len(frames_by_asset) < min_assets:
+        return CrossSectionalScore(-1.0, float("nan"), float("nan"), float("nan"), float("nan"), float("nan"), 0, 0.0)
 
     factor_by_asset = {}
     fwd_by_asset = {}

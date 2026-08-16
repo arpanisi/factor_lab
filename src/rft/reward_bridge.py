@@ -35,7 +35,7 @@ def reward_completion(
     price_col: str,
     archive: MinedFactorDatabase | None = None,
     min_history: int = 1,
-    min_assets: int = 3,
+    min_assets: int = 8,
     reward_config: DiCoRewardConfig | None = None,
     selection_config: DatabaseSelectionConfig | None = None,
 ) -> RewardBridgeResult:
@@ -101,7 +101,7 @@ def reward_completions(
     price_col: str,
     archive: MinedFactorDatabase | None = None,
     min_history: int = 1,
-    min_assets: int = 3,
+    min_assets: int = 8,
     reward_config: DiCoRewardConfig | None = None,
     selection_config: DatabaseSelectionConfig | None = None,
 ) -> tuple[RewardBridgeResult, ...]:

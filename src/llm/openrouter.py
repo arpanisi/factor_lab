@@ -32,6 +32,8 @@ def call_openrouter_chat(
     max_tokens: int = 1,
     timeout_seconds: int = 60,
     api_key: str | None = None,
+    top_p: float | None = None,
+    top_k: int | None = None,
 ) -> dict[str, Any]:
     """Call OpenRouter chat completions and return parsed JSON."""
 
@@ -46,6 +48,10 @@ def call_openrouter_chat(
         "temperature": temperature,
         "max_tokens": max_tokens,
     }
+    if top_p is not None:
+        payload["top_p"] = float(top_p)
+    if top_k is not None:
+        payload["top_k"] = int(top_k)
     req = urllib.request.Request(
         OPENROUTER_URL,
         data=json.dumps(payload).encode("utf-8"),

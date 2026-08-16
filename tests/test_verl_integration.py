@@ -7,6 +7,11 @@ from src.training import FactorRewardRuntime, make_grpo_reward_func
 from src.verl_integration.dataset import build_verl_prompt_rows
 from src.verl_integration.reward_bridge import FactorLabVerlRewardBridge
 from src.verl_integration.reward_function import reward_fn
+from src.verl_integration.verl_main import (
+    build_verl_config,
+    build_verl_overrides,
+    load_factor_verl_config,
+)
 
 
 def _task():
@@ -56,9 +61,8 @@ def test_verl_reward_fn_matches_grpo_reward_runtime(monkeypatch, tmp_path):
         )
 
     frames = {
-        "a": frame([10, 11, 12, 13, 14, 15, 16, 17]),
-        "b": frame([10, 10.5, 11, 11.5, 12, 12.5, 13, 13.5]),
-        "c": frame([10, 9.8, 9.6, 9.4, 9.2, 9.0, 8.8, 8.6]),
+        f"asset_{i}": frame([10, 10 + i * 0.1 + 1, 10 + i * 0.2 + 2, 10 + i * 0.3 + 3, 10 + i * 0.4 + 4, 10 + i * 0.5 + 5, 10 + i * 0.6 + 6, 10 + i * 0.7 + 7])
+        for i in range(8)
     }
     panel = {
         "open": pd.concat({k: v["open"] for k, v in frames.items()}, axis=1),
@@ -71,7 +75,7 @@ def test_verl_reward_fn_matches_grpo_reward_runtime(monkeypatch, tmp_path):
     panel_path = tmp_path / "panel.pkl"
     pd.to_pickle(panel, panel_path)
     monkeypatch.setenv("FACTOR_LAB_CRYPTO_PANEL", str(panel_path))
-    monkeypatch.setenv("FACTOR_LAB_TICKERS", "a,b,c")
+    monkeypatch.setenv("FACTOR_LAB_TICKERS", ",".join(frames))
     monkeypatch.setenv("FACTOR_LAB_ARCHIVE_JSONL", str(tmp_path / "archive.jsonl"))
 
     extra_info = build_verl_prompt_rows([_task()], namespace="crypto")[0].extra_info
@@ -119,3 +123,17 @@ def test_verl_reward_bridge_places_reward_on_last_response_token(monkeypatch):
     assert reward_tensor[1, 3] == pytest.approx(-1.0)
     assert reward_tensor[0, 0] == 0.0
     assert out["reward_extra_info"]["expr"][0] == "ts_mean(crypto.returns(2))"
+
+
+def test_verl_config_merge_enables_validation():
+    raw_config = load_factor_verl_config("config/verl_qwen3_14b_fullft_a100.yaml")
+    overrides = build_verl_overrides(raw_config)
+
+    assert overrides["trainer"]["val_before_train"] is True
+    assert overrides["trainer"]["test_freq"] == 20
+    assert overrides["trainer"]["save_freq"] == 20
+
+    merged = build_verl_config(raw_config, base_config="config/verl_ppo_trainer_base.yaml")
+    assert merged.trainer.val_before_train is True
+    assert merged.trainer.test_freq == 20
+    assert merged.trainer.save_freq == 20

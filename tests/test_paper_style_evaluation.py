@@ -39,6 +39,33 @@ def test_select_decorrelated_factors_applies_threshold():
 
 def test_evaluate_factor_library_returns_fused_validation_and_test_metrics():
     frames = {
+        f"asset_{i}": _crypto_frame([10 + i * 0.1 + j * 0.2 for j in range(8)])
+        for i in range(8)
+    }
+
+    result = evaluate_factor_library(
+        ["ts_mean(crypto.returns(2))", "neg(ts_mean(crypto.returns(2)))"],
+        "crypto",
+        frames,
+        price_col="close",
+        config=PostSelectionConfig(
+            validation_start="2024-01-01",
+            validation_end="2024-01-05",
+            test_start="2024-01-06",
+            test_end="2024-01-08",
+            top_k=1,
+            min_history=3,
+            min_assets=8,
+        ),
+    )
+
+    assert len(result.selected_exprs) == 1
+    assert result.validation.valid_times > 0
+    assert result.test.valid_times > 0
+
+
+def test_evaluate_factor_library_rejects_undersized_universe():
+    frames = {
         "winner": _crypto_frame([10, 11, 12, 13, 14, 15, 16, 17]),
         "middle": _crypto_frame([10, 10.5, 11, 11.5, 12, 12.5, 13, 13.5]),
         "loser": _crypto_frame([10, 9.8, 9.6, 9.4, 9.2, 9.0, 8.8, 8.6]),
@@ -60,6 +87,6 @@ def test_evaluate_factor_library_returns_fused_validation_and_test_metrics():
         ),
     )
 
-    assert len(result.selected_exprs) == 1
-    assert result.validation.valid_times > 0
-    assert result.test.valid_times > 0
+    assert len(result.selected_exprs) == 0
+    assert result.validation.valid_times == 0
+    assert result.test.valid_times == 0

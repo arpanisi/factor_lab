@@ -26,7 +26,7 @@ model:
 data:
   train_parquet: factor_lab/outputs/verl/crypto_grpo_tasks.parquet
   crypto_panel: data/crypto_panel_clean.pkl
-  tickers: BTC-USD,ETH-USD,XRP-USD
+  tickers: ADA-USD,BNB-USD,BTC-USD,DOGE-USD,ETH-USD,LINK-USD,XLM-USD,XRP-USD
 
 reward:
   function: factor_lab.verl.reward_function.reward_fn

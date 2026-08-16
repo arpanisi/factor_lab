@@ -5,13 +5,10 @@ from src.benchmarks import run_compared_approaches
 
 def test_run_compared_approaches_with_fake_generator(tmp_path):
     dates = pd.date_range("2024-01-01", periods=40, freq="D")
+    tickers = ["ADA-USD", "BNB-USD", "BTC-USD", "DOGE-USD", "ETH-USD", "LINK-USD", "XLM-USD", "XRP-USD"]
     panel = {
         "open": pd.DataFrame(
-            {
-                "BTC-USD": range(100, 140),
-                "ETH-USD": range(80, 120),
-                "XRP-USD": range(40, 80),
-            },
+            {t: range(100 + i * 10, 140 + i * 10) for i, t in enumerate(tickers)},
             index=dates,
             dtype=float,
         )
@@ -20,11 +17,7 @@ def test_run_compared_approaches_with_fake_generator(tmp_path):
     panel["low"] = panel["open"] - 1
     panel["close"] = panel["open"]
     panel["volume"] = pd.DataFrame(
-        {
-            "BTC-USD": range(1000, 1040),
-            "ETH-USD": range(900, 940),
-            "XRP-USD": range(800, 840),
-        },
+        {t: range(1000 + i * 50, 1040 + i * 50) for i, t in enumerate(tickers)},
         index=dates,
         dtype=float,
     )

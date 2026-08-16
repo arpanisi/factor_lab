@@ -22,7 +22,7 @@ class FactorRewardRuntime:
     price_col: str
     archive: MinedFactorDatabase
     min_history: int = 30
-    min_assets: int = 3
+    min_assets: int = 8
     reward_log_jsonl: Path | None = None
 
 

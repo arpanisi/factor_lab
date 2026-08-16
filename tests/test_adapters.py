@@ -1,7 +1,12 @@
 import pandas as pd
 import pytest
 
-from src.data.adapters import adapt_crypto_ohlcv, adapt_crsp_dsf_v2, adapt_taq_features
+from src.data.adapters import (
+    adapt_crsp_dsf_v2,
+    adapt_crypto_ohlcv,
+    adapt_taq_features,
+    verify_crypto_panel,
+)
 
 
 def test_adapt_crsp_dsf_v2_maps_expected_columns():
@@ -56,4 +61,48 @@ def test_adapt_taq_features_requires_microstructure_columns():
 def test_adapter_missing_columns_fail():
     with pytest.raises(ValueError, match="missing required columns"):
         adapt_crypto_ohlcv(pd.DataFrame({"close": [1.0]}))
+
+
+def test_verify_crypto_panel_missing_file_raises_file_not_found(tmp_path):
+    missing = tmp_path / "nonexistent.pkl"
+    with pytest.raises(FileNotFoundError, match="crypto panel file not found"):
+        verify_crypto_panel(missing)
+
+
+def test_verify_crypto_panel_missing_keys_raises_value_error():
+    incomplete = {
+        "open": pd.DataFrame({"BTC": [10.0]}),
+        "close": pd.DataFrame({"BTC": [10.0]}),
+    }
+    with pytest.raises(ValueError, match="crypto panel missing required key"):
+        verify_crypto_panel(incomplete)
+
+
+def test_verify_crypto_panel_missing_tickers_raises_value_error():
+    panel = {
+        "open": pd.DataFrame({"BTC": [10.0]}),
+        "high": pd.DataFrame({"BTC": [11.0]}),
+        "low": pd.DataFrame({"BTC": [9.0]}),
+        "close": pd.DataFrame({"BTC": [10.0]}),
+        "volume": pd.DataFrame({"BTC": [100.0]}),
+    }
+    with pytest.raises(ValueError, match=r"crypto panel missing requested ticker\(s\): \['ETH'\]"):
+        verify_crypto_panel(panel, tickers=["BTC", "ETH"])
+
+
+def test_verify_crypto_panel_valid_panel(tmp_path):
+    panel = {
+        "open": pd.DataFrame({"BTC": [10.0], "ETH": [20.0]}),
+        "high": pd.DataFrame({"BTC": [11.0], "ETH": [21.0]}),
+        "low": pd.DataFrame({"BTC": [9.0], "ETH": [19.0]}),
+        "close": pd.DataFrame({"BTC": [10.0], "ETH": [20.0]}),
+        "volume": pd.DataFrame({"BTC": [100.0], "ETH": [200.0]}),
+    }
+    path = tmp_path / "panel.pkl"
+    pd.to_pickle(panel, path)
+
+    loaded = verify_crypto_panel(path, tickers=["BTC", "ETH"])
+    assert set(loaded.keys()) >= {"open", "high", "low", "close", "volume"}
+    assert set(loaded["close"].columns) == {"BTC", "ETH"}
+
 

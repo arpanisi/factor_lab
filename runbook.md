@@ -127,8 +127,8 @@ PY
 
 Navigate to the factor_lab folder and run the following commnad:
 
-```
-.venv/bin/python src/data/wrds_crsp.py \
+```bash
+python src/data/wrds_crsp.py \
   --start-date 2019-01-01 \
   --end-date 2024-12-31 \
   --universe sp500 \
@@ -139,8 +139,8 @@ Navigate to the factor_lab folder and run the following commnad:
 
 The TAQ dataset takes longer than the CRSP dataset. First, try with a smaller smoke test to see if the pipeline is working. 
 
-```
-.venv/bin/python -m factor_lab/src/data/wrds_taq \
+```bash
+python src/data/wrds_taq.py \
   --symbols AAPL,MSFT \
   --start-date 2024-01-02 \
   --end-date 2024-01-04 \
@@ -164,6 +164,30 @@ Expected:
 ```text
 passed
 ```
+
+### 5.5 Tier 1 Acceptance Gate (coding-plan.md Sections 10.4/10.5/10.6)
+
+Run the full local no-GPU acceptance gate before spending any GPU budget: the
+synthetic factor-quality sweep (10.4) against the real crypto panel, the
+within-rollout-group reward variance diagnostic (10.5) via the real OpenRouter
+miner model (`qwen/qwen3-235b-a22b-2507`, 8 rollouts/task at
+`temperature=1.0, top_p=0.95, top_k=50`), and the locked JSON report (10.6).
+
+Requires `data/crypto/crypto_panel_clean.pkl` (Section 9.1 hard prerequisite)
+and `OPENROUTER_API_KEY` in the environment or `.env`. Run from the repository
+root:
+
+```bash
+python -m examples.run_tier1_gate \
+  --crypto-panel data/crypto/crypto_panel_clean.pkl \
+  --tickers ADA-USD,BNB-USD,BTC-USD,DOGE-USD,ETH-USD,LINK-USD,XLM-USD,XRP-USD \
+  --output outputs/tier1/tier1_report.json
+```
+
+The report contains a computed `overall_passed` that is `true` only when every
+Section 10.4 and 10.5 criterion holds. If the crypto panel file is missing, the
+gate hard-stops with a message naming the missing path (it never falls back to
+a synthetic or empty panel).
 
 ## 6. Download Models from Huggingface
 
@@ -211,7 +235,7 @@ div(ts_mean(crypto.volume(10)), ts_std(crypto.returns(30)))
 Seed score:
 
 ```text
-0.655671862964597
+0.38385972330719526
 ```
 
 ## 8. Build Verl Task Dataset
@@ -219,19 +243,19 @@ Seed score:
 This creates the full-scale task bank rows: seed expression, factor scenario, time window, objective, prompt, and rule-reward metadata.
 
 ```bash
-python -m factor_lab.verl.build_dataset \
-  --output factor_lab/outputs/verl/crypto_grpo_tasks.parquet \
+python -m src.verl_integration.build_dataset \
+  --output outputs/verl/crypto_grpo_tasks.parquet \
   --seed-expr "div(ts_mean(crypto.volume(10)), ts_std(crypto.returns(30)))" \
-  --seed-score 0.655671862964597 \
-  --crypto-panel data/crypto_panel_clean.pkl \
-  --tickers BTC-USD,ETH-USD,XRP-USD \
+  --seed-score 0.38385972330719526 \
+  --crypto-panel data/crypto/crypto_panel_clean.pkl \
+  --tickers ADA-USD,BNB-USD,BTC-USD,DOGE-USD,ETH-USD,LINK-USD,XLM-USD,XRP-USD \
   --repeats 400
 ```
 
 Expected:
 
 ```text
-wrote 400 rows to factor_lab/outputs/verl/crypto_grpo_tasks.parquet
+wrote 400 rows to outputs/verl/crypto_grpo_tasks.parquet
 ```
 
 ## 9. Configure Verl Reward Workers
@@ -239,16 +263,16 @@ wrote 400 rows to factor_lab/outputs/verl/crypto_grpo_tasks.parquet
 Set these before launching Verl:
 
 ```bash
-export FACTOR_LAB_CRYPTO_PANEL=data/crypto_panel_clean.pkl
-export FACTOR_LAB_TICKERS=BTC-USD,ETH-USD,XRP-USD
-export FACTOR_LAB_ARCHIVE_JSONL=factor_lab/outputs/verl/mined_factors.jsonl
-export FACTOR_LAB_REWARD_LOG_JSONL=factor_lab/outputs/verl/reward_rollouts.jsonl
+export FACTOR_LAB_CRYPTO_PANEL=data/crypto/crypto_panel_clean.pkl
+export FACTOR_LAB_TICKERS=ADA-USD,BNB-USD,BTC-USD,DOGE-USD,ETH-USD,LINK-USD,XLM-USD,XRP-USD
+export FACTOR_LAB_ARCHIVE_JSONL=outputs/verl/qwen3_14b_fullft/mined_factors.jsonl
+export FACTOR_LAB_REWARD_LOG_JSONL=outputs/verl/qwen3_14b_fullft/reward_rollouts.jsonl
 ```
 
 Reward function import path:
 
 ```text
-factor_lab.verl.reward_function.reward_fn
+src.verl_integration.reward_function.reward_fn
 ```
 
 This is the executable reward bridge: completions become Factor-DSL expressions, expressions are validated and backtested, RankIC/IC/ICIR-style metrics are converted into DiCo reward, and the reward function returns the scalar tensor used by GRPO.
@@ -258,9 +282,9 @@ This is the executable reward bridge: completions become Factor-DSL expressions,
 Use the installed Verl commit's GRPO/PPO launcher and map these values into its config:
 
 ```text
-train parquet: factor_lab/outputs/verl/crypto_grpo_tasks.parquet
-reward bridge: factor_lab.verl.reward_bridge.FactorLabVerlRewardBridge
-scalar reward fn: factor_lab.verl.reward_function.reward_fn
+train parquet: outputs/verl/crypto_grpo_tasks.parquet
+reward bridge: src.verl_integration.reward_bridge.FactorLabVerlRewardBridge
+scalar reward fn: src.verl_integration.reward_function.reward_fn
 model: /workspace/models/Qwen3-14B
 GPUs: 8
 lora_rank: 0
@@ -278,7 +302,7 @@ save_steps: 20
 The project-side config lives at:
 
 ```text
-factor_lab/config/verl_qwen3_14b_fullft_a100.yaml
+config/verl_qwen3_14b_fullft_a100.yaml
 ```
 
 Helper script:
@@ -292,8 +316,8 @@ That script builds the train/validation parquet files and prints the exact Facto
 Main launch command:
 
 ```bash
-python -m factor_lab.verl.verl_main \
-  --config factor_lab/config/verl_qwen3_14b_fullft_a100.yaml \
+python -m src.verl_integration.verl_main \
+  --config config/verl_qwen3_14b_fullft_a100.yaml \
   --base-config config/verl_ppo_trainer_base.yaml
 ```
 
@@ -304,14 +328,15 @@ Use this only to verify the reward loop before spending on the 8-A100 run.
 Conservative A100 40GB run:
 
 ```bash
-python  training/train_grpo_qlora \
+python -m src.training.train_grpo_qlora \
   --model /workspace/models/Qwen2.5-0.5B-Instruct \
   --seed-expr "div(ts_mean(crypto.volume(10)), ts_std(crypto.returns(30)))" \
-  --seed-score 0.655671862964597 \
-  --crypto-panel data/crypto_panel_clean.pkl \
-  --tickers BTC-USD,ETH-USD,XRP-USD \
-  --output-dir factor_lab/outputs/grpo/Qwen2.5-0.5B-Instruct_crypto_grpo \
-  --archive-jsonl factor_lab/outputs/grpo/Qwen2.5-0.5B-Instruct/mined_factors.jsonl \
+  --seed-score 0.38385972330719526 \
+  --crypto-panel data/crypto/crypto_panel_clean.pkl \
+  --tickers ADA-USD,BNB-USD,BTC-USD,DOGE-USD,ETH-USD,LINK-USD,XLM-USD,XRP-USD \
+  --output-dir outputs/grpo/Qwen2.5-0.5B-Instruct_crypto_grpo \
+  --archive-jsonl outputs/grpo/Qwen2.5-0.5B-Instruct/mined_factors.jsonl \
+  --reward-log-jsonl outputs/grpo/Qwen2.5-0.5B-Instruct/reward_rollouts.jsonl \
   --batch-size 1 \
   --grad-accum 8 \
   --generations 8 \
@@ -324,7 +349,6 @@ python  training/train_grpo_qlora \
   --steps 50 \
   --save-steps 20 \
   --dataset-repeat 400 \
-  --reward-log-jsonl factor_lab/outputs/grpo/Qwen2.5-7B-Instruct/reward_rollouts.jsonl \
   --lr 0.000005 \
   --beta 0.02 \
   --loss-type dapo
@@ -346,12 +370,12 @@ Reduce in this order:
 After training, save these:
 
 ```bash
-factor_lab/outputs/verl/crypto_grpo_tasks.parquet
-factor_lab/outputs/verl/mined_factors.jsonl
-factor_lab/outputs/verl/reward_rollouts.jsonl
-factor_lab/outputs/grpo/Qwen2.5-7B-Instruct_crypto_grpo/
-factor_lab/outputs/grpo/Qwen2.5-7B-Instruct/mined_factors.jsonl
-factor_lab/outputs/grpo/Qwen2.5-7B-Instruct/reward_rollouts.jsonl
+outputs/verl/crypto_grpo_tasks.parquet
+outputs/verl/qwen3_14b_fullft/mined_factors.jsonl
+outputs/verl/qwen3_14b_fullft/reward_rollouts.jsonl
+outputs/grpo/Qwen2.5-7B-Instruct_crypto_grpo/
+outputs/grpo/Qwen2.5-7B-Instruct/mined_factors.jsonl
+outputs/grpo/Qwen2.5-7B-Instruct/reward_rollouts.jsonl
 ```
 
 The model output/checkpoint directory is the trained model artifact. The mined factor JSONL is the accepted factor database. The reward rollout JSONL stores every completion, extracted expression, reward, validity flag, metrics, and rejection reason.

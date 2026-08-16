@@ -13,7 +13,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from src.data import adapt_crypto_ohlcv, adapt_crsp_dsf_v2
+from src.data import adapt_crsp_dsf_v2, adapt_crypto_ohlcv, verify_crypto_panel
 from src.dsl import PointInTimeContext, evaluate_expr
 
 
@@ -71,11 +71,8 @@ def load_dotenv(path: Path | None = None) -> None:
 def crypto_asset_frame_from_panel(panel: dict, ticker: str) -> pd.DataFrame:
     """Build one asset OHLCV frame from the saved crypto panel dictionary."""
 
+    verify_crypto_panel(panel, tickers=(ticker,))
     required = ["open", "high", "low", "close", "volume"]
-    missing = [key for key in required if key not in panel]
-    if missing:
-        raise ValueError(f"crypto panel missing keys: {missing}")
-
     frame = pd.DataFrame({key: panel[key][ticker] for key in required})
     if "returns" in panel:
         frame["returns"] = panel["returns"][ticker]
@@ -106,7 +103,7 @@ def evaluate_last_available(
 def run_crypto_smoke(panel_path: Path = DEFAULT_CRYPTO_PANEL, ticker: str = "BTC-USD") -> dict[str, float]:
     """Run the crypto namespace smoke test on the saved project panel."""
 
-    panel = pd.read_pickle(panel_path)
+    panel = verify_crypto_panel(panel_path, tickers=(ticker,))
     frame = crypto_asset_frame_from_panel(panel, ticker)
     adapted = adapt_crypto_ohlcv(frame)
     value = evaluate_last_available("crypto", adapted, CRYPTO_EXPR, min_history=25)

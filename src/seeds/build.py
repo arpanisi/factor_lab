@@ -36,7 +36,7 @@ def build_scenario_seed_bank(
     windows: tuple[EvaluationWindow, ...] | list[EvaluationWindow],
     raw_candidates: tuple[str, ...] | list[str] | None = None,
     min_history: int = 1,
-    min_assets: int = 3,
+    min_assets: int = 8,
     pool_config: SeedPoolConfig | None = None,
 ) -> ScenarioSeedBuild:
     """Build empirically scored seeds and seed-window tasks for a scenario."""

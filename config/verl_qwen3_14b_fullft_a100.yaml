@@ -17,7 +17,7 @@ data:
   train_parquet: outputs/verl/crypto_grpo_tasks.parquet
   val_parquet: outputs/verl/crypto_grpo_val_tasks.parquet
   crypto_panel: data/crypto/crypto_panel_clean.pkl
-  tickers: BTC-USD,ETH-USD,XRP-USD
+  tickers: ADA-USD,BNB-USD,BTC-USD,DOGE-USD,ETH-USD,LINK-USD,XLM-USD,XRP-USD
   max_prompt_length: 1536
   max_response_length: 256
 
@@ -58,4 +58,6 @@ verl:
     nnodes: 1
     n_gpus_per_node: 8
     save_freq: 20
+    test_freq: 20
+    val_before_train: true
     total_epochs: 1

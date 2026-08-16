@@ -14,7 +14,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Run compared alpha-discovery benchmark approaches.")
     parser.add_argument("--model", default="qwen/qwen3-235b-a22b-2507")
     parser.add_argument("--crypto-panel", type=Path, default=DEFAULT_CRYPTO_PANEL)
-    parser.add_argument("--tickers", default="BTC-USD,ETH-USD,XRP-USD")
+    parser.add_argument("--tickers", default="ADA-USD,BNB-USD,BTC-USD,DOGE-USD,ETH-USD,LINK-USD,XLM-USD,XRP-USD")
     parser.add_argument(
         "--approaches",
         default="alphabench,quantaalpha,rd_agent,alpha_jungle,factor_lab",

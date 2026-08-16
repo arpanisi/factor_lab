@@ -4,13 +4,18 @@ from __future__ import annotations
 
 import argparse
 import os
+import sys
 import tempfile
 from pathlib import Path
 from typing import Any
 
 import pandas as pd
 
-from adapters import adapt_crsp_dsf_v2
+REPO_ROOT = Path(__file__).resolve().parents[2]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
+from src.data.adapters import adapt_crsp_dsf_v2
 
 CRSP_DSF_V2_COLUMNS = [
     "permno",
@@ -23,8 +28,6 @@ CRSP_DSF_V2_COLUMNS = [
     "dlyret",
     "dlycap",
 ]
-
-REPO_ROOT = Path(__file__).resolve().parents[2]
 
 
 def normalize_wrds_password(value: str | None) -> str:
