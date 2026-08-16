@@ -14,7 +14,7 @@ from src.seeds.task_bank import SeedTask
 class MinerConfig:
     """OpenRouter request settings for the local miner baseline."""
 
-    model: str = "qwen/qwen-2.5-7b-instruct"
+    model: str = "qwen/qwen3-235b-a22b-2507"
     temperature: float = 0.8
     max_tokens: int = 1600
     timeout_seconds: int = 60

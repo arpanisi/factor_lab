@@ -3,13 +3,18 @@
 from __future__ import annotations
 
 import argparse
+import sys
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Iterable
 
 import pandas as pd
 
-from wrds_crsp import connect_wrds
+REPO_ROOT = Path(__file__).resolve().parents[2]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
+from src.data.wrds_crsp import connect_wrds
 
 TAQ_1M_COLUMNS = ["open", "high", "low", "close", "volume", "spread", "midret", "imbalance", "trade_size", "trade_count"]
 

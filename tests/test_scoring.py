@@ -60,7 +60,7 @@ def test_directional_prediction_scores_known_signal():
     assert result.score == result.directional_accuracy
 
 
-def test_cross_sectional_rankic_scores_ranked_assets():
+def test_cross_sectional_rankic_rejects_undersized_universe():
     dates = pd.date_range("2024-01-01", periods=6, freq="D")
     frames = {
         "winner": _crypto_frame([10, 11, 12, 13, 14, 15]).loc[dates],
@@ -75,6 +75,25 @@ def test_cross_sectional_rankic_scores_ranked_assets():
         price_col="close",
         min_history=3,
         min_assets=3,
+    )
+
+    assert result.valid_times == 0
+    assert result.score == -1.0
+
+
+def test_cross_sectional_rankic_scores_ranked_assets_with_locked_minimum():
+    dates = pd.date_range("2024-01-01", periods=6, freq="D")
+    frames = {
+        f"asset_{i}": _crypto_frame([10, 10 + i * 0.1 + 1, 10 + i * 0.2 + 2, 10 + i * 0.3 + 3, 10 + i * 0.4 + 4, 10 + i * 0.5 + 5]).loc[dates]
+        for i in range(8)
+    }
+
+    result = score_cross_sectional_rankic(
+        "ts_mean(crypto.returns(2))",
+        "crypto",
+        frames,
+        price_col="close",
+        min_history=3,
     )
 
     assert result.valid_times > 0

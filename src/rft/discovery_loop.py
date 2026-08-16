@@ -39,7 +39,7 @@ def run_discovery_for_task(
     price_col: str,
     count: int = 4,
     min_history: int = 1,
-    min_assets: int = 3,
+    min_assets: int = 8,
     generator: CandidateGenerator | None = None,
     miner_config: MinerConfig | None = None,
     archive=None,

@@ -1,10 +1,15 @@
 from unittest.mock import patch
 
+import pytest
+
 from examples.baseline_rollout import run_crypto_baseline_rollout
 from examples.dsl_smoke_test import DEFAULT_CRYPTO_PANEL
 
 
 def test_run_crypto_baseline_rollout_with_mocked_llms(tmp_path):
+    if not DEFAULT_CRYPTO_PANEL.exists():
+        pytest.skip("saved crypto project panel is not available")
+
     raw_candidates = (
         "div(ts_sum(crypto.returns(30)), ts_std(crypto.returns(30)))",
         "div(ts_mean(crypto.volume(7)), ts_mean(crypto.volume(30)))",

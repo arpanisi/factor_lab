@@ -10,7 +10,7 @@ set -euo pipefail
 # with a fallback default, so build_dataset below and the eventual Verl
 # reward_fn agree on the same crypto data/tickers/output locations).
 export FACTOR_LAB_CRYPTO_PANEL="${FACTOR_LAB_CRYPTO_PANEL:-data/crypto/crypto_panel_clean.pkl}"
-export FACTOR_LAB_TICKERS="${FACTOR_LAB_TICKERS:-BTC-USD,ETH-USD,XRP-USD}"
+export FACTOR_LAB_TICKERS="${FACTOR_LAB_TICKERS:-ADA-USD,BNB-USD,BTC-USD,DOGE-USD,ETH-USD,LINK-USD,XLM-USD,XRP-USD}"
 export FACTOR_LAB_ARCHIVE_JSONL="${FACTOR_LAB_ARCHIVE_JSONL:-outputs/verl/qwen3_14b_fullft/mined_factors.jsonl}"
 export FACTOR_LAB_REWARD_LOG_JSONL="${FACTOR_LAB_REWARD_LOG_JSONL:-outputs/verl/qwen3_14b_fullft/reward_rollouts.jsonl}"
 
@@ -19,7 +19,7 @@ export FACTOR_LAB_REWARD_LOG_JSONL="${FACTOR_LAB_REWARD_LOG_JSONL:-outputs/verl/
 python -m src.verl_integration.build_dataset \
   --output outputs/verl/crypto_grpo_tasks.parquet \
   --seed-expr "div(ts_mean(crypto.volume(10)), ts_std(crypto.returns(30)))" \
-  --seed-score 0.655671862964597 \
+  --seed-score 0.38385972330719526 \
   --crypto-panel "${FACTOR_LAB_CRYPTO_PANEL}" \
   --tickers "${FACTOR_LAB_TICKERS}" \
   --repeats 400
@@ -29,7 +29,7 @@ python -m src.verl_integration.build_dataset \
 python -m src.verl_integration.build_dataset \
   --output outputs/verl/crypto_grpo_val_tasks.parquet \
   --seed-expr "div(ts_mean(crypto.volume(10)), ts_std(crypto.returns(30)))" \
-  --seed-score 0.655671862964597 \
+  --seed-score 0.38385972330719526 \
   --crypto-panel "${FACTOR_LAB_CRYPTO_PANEL}" \
   --tickers "${FACTOR_LAB_TICKERS}" \
   --repeats 32

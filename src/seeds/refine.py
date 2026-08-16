@@ -37,7 +37,7 @@ def refine_scenario(raw: str) -> RefinedScenario:
                 constraints=("use only point-in-time TAQ-derived fields",),
             ),
             namespace="taq",
-            price_col="midret",
+            price_col="close",
         )
 
     if "crypto" in text or any(token in text for token in ("btc", "eth", "coin")):

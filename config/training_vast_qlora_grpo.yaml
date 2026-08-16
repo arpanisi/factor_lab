@@ -4,9 +4,9 @@ model:
   adapter: qlora
 
 grpo:
-  script: factor_lab.training.train_grpo_qlora
+  script: src.training.train_grpo_qlora
   objective: executable_factor_reward
-  reward_source: factor_lab.training.grpo_reward.make_grpo_reward_func
+  reward_source: src.training.grpo_reward.make_grpo_reward_func
   reward_components:
     - DSL validity
     - daily cross-sectional RankIC
@@ -23,6 +23,6 @@ grpo:
   loss_type: dapo
 
 data:
-  local_crypto_panel: ClassProject/data/crypto_panel_clean.pkl
+  local_crypto_panel: data/crypto/crypto_panel_clean.pkl
   wrds_crsp_target: daily_cross_sectional_rankic
   taq_target: intraday_microstructure_direction

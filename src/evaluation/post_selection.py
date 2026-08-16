@@ -29,7 +29,7 @@ class PostSelectionConfig:
     correlation_threshold: float = 0.7
     top_k: int = 5
     min_history: int = 30
-    min_assets: int = 3
+    min_assets: int = 8
     horizon: int = 1
 
 
@@ -76,13 +76,37 @@ def evaluate_factor_library(
     """Evaluate, select, decorrelate, and fuse a candidate factor library."""
 
     cfg = config or PostSelectionConfig()
+    min_assets = max(8, int(cfg.min_assets))
+    if len(frames_by_asset) < min_assets:
+        empty_eval = FactorEvaluation(
+            expr="undersized_universe",
+            split="undersized",
+            dir_acc=float("nan"),
+            ic_mean=float("nan"),
+            rank_ic_mean=float("nan"),
+            icir=float("nan"),
+            long_short_mean=float("nan"),
+            long_short_sharpe=float("nan"),
+            valid_times=0,
+            mean_assets_per_time=0.0,
+        )
+        return FusedEvaluation((), empty_eval, empty_eval, float(cfg.correlation_threshold))
+
     factor_matrices = {
         expr: _factor_matrix(expr, namespace, frames_by_asset, min_history=cfg.min_history) for expr in exprs
     }
     fwd = _forward_return_matrix(frames_by_asset, price_col=price_col, horizon=cfg.horizon)
 
     validation_evals = [
-        evaluate_factor_matrix(expr, matrix, fwd, split="validation", start=cfg.validation_start, end=cfg.validation_end)
+        evaluate_factor_matrix(
+            expr,
+            matrix,
+            fwd,
+            split="validation",
+            start=cfg.validation_start,
+            end=cfg.validation_end,
+            min_assets=min_assets,
+        )
         for expr, matrix in factor_matrices.items()
     ]
     selected = select_decorrelated_factors(
@@ -101,6 +125,7 @@ def evaluate_factor_library(
         split="validation_fused",
         start=cfg.validation_start,
         end=cfg.validation_end,
+        min_assets=min_assets,
     )
     test = evaluate_fused_signal(
         selected_matrices,
@@ -108,6 +133,7 @@ def evaluate_factor_library(
         split="test_fused",
         start=cfg.test_start,
         end=cfg.test_end,
+        min_assets=min_assets,
     )
     return FusedEvaluation(tuple(selected), validation, test, float(cfg.correlation_threshold))
 
@@ -120,10 +146,26 @@ def evaluate_factor_matrix(
     split: str,
     start: str | None = None,
     end: str | None = None,
+    min_assets: int = 8,
 ) -> FactorEvaluation:
     """Compute DirAcc, IC, RankIC, ICIR, and long-short spread for a factor matrix."""
 
+    min_assets = max(8, int(min_assets))
     factor, fwd = _align_split(factor, fwd, start=start, end=end)
+    if factor.shape[1] < min_assets:
+        return FactorEvaluation(
+            expr=expr,
+            split=split,
+            dir_acc=float("nan"),
+            ic_mean=float("nan"),
+            rank_ic_mean=float("nan"),
+            icir=float("nan"),
+            long_short_mean=float("nan"),
+            long_short_sharpe=float("nan"),
+            valid_times=0,
+            mean_assets_per_time=0.0,
+        )
+
     dir_hits: list[float] = []
     ics: list[float] = []
     rank_ics: list[float] = []
@@ -131,8 +173,8 @@ def evaluate_factor_matrix(
     assets_per_time: list[int] = []
 
     for timestamp in factor.index:
-        pair = pd.concat({"factor": factor.loc[timestamp], "fwd": fwd.loc[timestamp]}, axis=1).dropna()
-        if pair.shape[0] < 2:
+        pair = pd.concat({"factor": factor.loc[timestamp], "fwd": fwd.loc[timestamp]}, axis=1, sort=False).dropna()
+        if pair.shape[0] < int(min_assets):
             continue
         assets_per_time.append(int(pair.shape[0]))
         signs = np.sign(pair["factor"].to_numpy(dtype=float))
@@ -202,15 +244,16 @@ def evaluate_fused_signal(
     split: str,
     start: str | None = None,
     end: str | None = None,
+    min_assets: int = 8,
 ) -> FactorEvaluation:
     """Equal-weight normalized-rank fusion of selected factor matrices."""
 
     if not factor_matrices:
         empty = pd.DataFrame(index=fwd.index, columns=fwd.columns, dtype=float)
-        return evaluate_factor_matrix("equal_weight_fusion", empty, fwd, split=split, start=start, end=end)
+        return evaluate_factor_matrix("equal_weight_fusion", empty, fwd, split=split, start=start, end=end, min_assets=min_assets)
     aligned = [_rank_normalize(matrix) for matrix in factor_matrices]
     fused = sum(aligned) / float(len(aligned))
-    return evaluate_factor_matrix("equal_weight_fusion", fused, fwd, split=split, start=start, end=end)
+    return evaluate_factor_matrix("equal_weight_fusion", fused, fwd, split=split, start=start, end=end, min_assets=min_assets)
 
 
 def write_evaluation_report(path: Path, evaluation: FusedEvaluation) -> None:

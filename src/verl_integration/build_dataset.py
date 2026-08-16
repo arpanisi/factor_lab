@@ -9,6 +9,7 @@ import pandas as pd
 
 from examples.build_seed_bank import crypto_frames_from_panel
 from examples.dsl_smoke_test import DEFAULT_CRYPTO_PANEL
+from src.data import verify_crypto_panel
 from src.seeds import EvaluationWindow, FactorScenario, SeedCandidate, build_task_bank
 from src.verl_integration.dataset import build_verl_prompt_rows, write_verl_prompt_dataset
 
@@ -25,15 +26,15 @@ def main() -> int:
     parser.add_argument("--window-start")
     parser.add_argument("--window-end")
     parser.add_argument("--crypto-panel", type=Path, default=DEFAULT_CRYPTO_PANEL)
-    parser.add_argument("--tickers", default="BTC-USD,ETH-USD,XRP-USD")
+    parser.add_argument("--tickers", default="ADA-USD,BNB-USD,BTC-USD,DOGE-USD,ETH-USD,LINK-USD,XLM-USD,XRP-USD")
     parser.add_argument("--repeats", type=int, default=400)
     args = parser.parse_args()
 
     start = args.window_start
     end = args.window_end
     if args.namespace == "crypto" and (start is None or end is None):
-        panel = pd.read_pickle(args.crypto_panel)
         tickers = tuple(item.strip() for item in args.tickers.split(",") if item.strip()) or None
+        panel = verify_crypto_panel(args.crypto_panel, tickers=tickers)
         frames = crypto_frames_from_panel(panel, tickers=tickers)
         if not frames:
             raise ValueError("no crypto frames were loaded")

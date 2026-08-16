@@ -25,7 +25,7 @@ def main() -> int:
     parser.add_argument("--seed-expr", required=True)
     parser.add_argument("--seed-score", type=float, default=0.0)
     parser.add_argument("--crypto-panel", type=Path, default=DEFAULT_CRYPTO_PANEL)
-    parser.add_argument("--tickers", default="BTC-USD,ETH-USD,XRP-USD")
+    parser.add_argument("--tickers", default="ADA-USD,BNB-USD,BTC-USD,DOGE-USD,ETH-USD,LINK-USD,XLM-USD,XRP-USD")
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--archive-jsonl", type=Path, default=Path("factor_lab/outputs/grpo/mined_factors.jsonl"))
     parser.add_argument("--max-prompt-length", type=int, default=1536)
@@ -85,7 +85,7 @@ def main() -> int:
             price_col="close",
             archive=archive,
             min_history=30,
-            min_assets=max(3, min(5, len(frames))),
+            min_assets=8,
             reward_log_jsonl=args.reward_log_jsonl,
         )
     )

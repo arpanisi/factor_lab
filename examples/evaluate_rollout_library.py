@@ -8,11 +8,12 @@ from pathlib import Path
 
 import pandas as pd
 
-from src.evaluation import PostSelectionConfig, evaluate_factor_library
-from src.evaluation.post_selection import write_evaluation_report
 from examples.baseline_rollout import DEFAULT_OUTPUT_DIR
 from examples.build_seed_bank import crypto_frames_from_panel
 from examples.dsl_smoke_test import DEFAULT_CRYPTO_PANEL
+from src.data import verify_crypto_panel
+from src.evaluation import PostSelectionConfig, evaluate_factor_library
+from src.evaluation.post_selection import write_evaluation_report
 
 
 def load_valid_rollout_exprs(path: Path) -> list[str]:
@@ -46,7 +47,7 @@ def run_crypto_rollout_library_evaluation(
     """Run validation-guided decorrelated selection and equal-weight fusion."""
 
     exprs = load_valid_rollout_exprs(rollout_json)
-    panel = pd.read_pickle(panel_path)
+    panel = verify_crypto_panel(panel_path, tickers=tickers)
     frames = crypto_frames_from_panel(panel, tickers=tickers)
     if validation_start is None or validation_end is None or test_start is None or test_end is None:
         dates = pd.DatetimeIndex(panel["close"].index).sort_values()
@@ -69,7 +70,7 @@ def run_crypto_rollout_library_evaluation(
             correlation_threshold=correlation_threshold,
             top_k=top_k,
             min_history=30,
-            min_assets=max(3, min(5, len(frames))),
+            min_assets=8,
             horizon=1,
         ),
     )
@@ -82,7 +83,7 @@ def main() -> int:
     parser.add_argument("--rollout-json", type=Path, default=DEFAULT_OUTPUT_DIR / "baseline_rollout.json")
     parser.add_argument("--crypto-panel", type=Path, default=DEFAULT_CRYPTO_PANEL)
     parser.add_argument("--output-path", type=Path, default=DEFAULT_OUTPUT_DIR / "paper_style_evaluation.json")
-    parser.add_argument("--tickers", default="BTC-USD,ETH-USD,XRP-USD")
+    parser.add_argument("--tickers", default="ADA-USD,BNB-USD,BTC-USD,DOGE-USD,ETH-USD,LINK-USD,XLM-USD,XRP-USD")
     parser.add_argument("--validation-start")
     parser.add_argument("--validation-end")
     parser.add_argument("--test-start")

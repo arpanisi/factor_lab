@@ -21,7 +21,7 @@ _EXPR_RE = re.compile(r"<expr>\s*(.*?)\s*</expr>", re.DOTALL | re.IGNORECASE)
 class OpenRouterConfig:
     """OpenRouter request settings for oracle seed generation."""
 
-    model: str = "deepseek/deepseek-chat"
+    model: str = "deepseek/deepseek-chat-v3.1"
     temperature: float = 0.7
     max_tokens: int = 1600
     timeout_seconds: int = 60

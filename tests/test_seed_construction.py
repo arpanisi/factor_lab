@@ -54,6 +54,7 @@ def test_refine_scenario_maps_taq_text_to_intraday_surface():
 
     assert refined.scenario.benchmark == "intraday_microstructure_direction"
     assert refined.namespace == "taq"
+    assert refined.price_col == "close"
 
 
 def test_make_time_windows_splits_range():
@@ -185,3 +186,40 @@ def test_build_scenario_seed_bank_handles_single_asset_direction():
 
     assert len(result.seeds) > 0
     assert len(result.tasks) == len(result.seeds) * 2
+
+
+def test_taq_scenario_scoring_uses_close_price():
+    refined = refine_scenario("TAQ microstructure intraday direction")
+    idx = pd.date_range("2024-01-01 09:30", periods=10, freq="1min")
+    taq_frame = pd.DataFrame(
+        {
+            "open": [100.0, 101.0, 102.0, 103.0, 104.0, 105.0, 106.0, 107.0, 108.0, 109.0],
+            "high": [100.5, 101.5, 102.5, 103.5, 104.5, 105.5, 106.5, 107.5, 108.5, 109.5],
+            "low": [99.5, 100.5, 101.5, 102.5, 103.5, 104.5, 105.5, 106.5, 107.5, 108.5],
+            "close": [100.0, 101.0, 102.0, 103.0, 104.0, 105.0, 106.0, 107.0, 108.0, 109.0],
+            "volume": [1000.0] * 10,
+            "spread": [0.02] * 10,
+            "midret": [0.001] * 10,
+            "imbalance": [0.1] * 10,
+            "trade_size": [100.0] * 10,
+            "trade_count": [10.0] * 10,
+        },
+        index=idx,
+    )
+    windows = [EvaluationWindow("2024-01-01", "2024-01-01")]
+
+    result = build_scenario_seed_bank(
+        refined.scenario,
+        namespace=refined.namespace,
+        data=taq_frame,
+        price_col=refined.price_col,
+        windows=windows,
+        raw_candidates=("taq.spread(1)", "taq.imbalance(1)"),
+        min_history=2,
+        pool_config=SeedPoolConfig(top_k=2, quality_threshold=-1.0),
+    )
+    assert refined.price_col == "close"
+    assert len(result.seeds) == 2
+    for seed in result.seeds:
+        assert seed.score > -1.0
+

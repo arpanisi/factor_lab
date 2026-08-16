@@ -95,3 +95,15 @@ def test_generate_oracle_seed_candidates_calls_openrouter(monkeypatch):
     body = json.loads(req.data.decode("utf-8"))
     assert body["model"] == "test/model"
     assert out == ("sign(diff(crypto.close(2)))",)
+
+
+def test_model_role_defaults_match_roles_config():
+    import yaml
+    from src.rft import MinerConfig
+
+    roles_path = Path("config/openrouter_llm_roles.yaml")
+    if roles_path.exists():
+        roles = yaml.safe_load(roles_path.read_text())
+        assert OpenRouterConfig().model == roles["oracle_llm"]["default_model"]
+        assert MinerConfig().model == roles["miner_llm"]["default_model"]
+

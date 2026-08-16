@@ -42,7 +42,7 @@ def main() -> int:
     parser.add_argument("--namespace")
     parser.add_argument("--count", type=int, default=12)
     parser.add_argument("--seed-expr", default="div(ts_mean(crypto.volume(10)), ts_std(crypto.returns(30)))")
-    parser.add_argument("--seed-score", type=float, default=0.655671862964597)
+    parser.add_argument("--seed-score", type=float, default=0.38385972330719526)
     parser.add_argument("--max-tokens", type=int, default=1)
     args = parser.parse_args()
 

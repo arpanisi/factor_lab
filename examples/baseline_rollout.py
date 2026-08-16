@@ -12,6 +12,7 @@ import pandas as pd
 
 from examples.build_seed_bank import crypto_frames_from_panel
 from examples.dsl_smoke_test import DEFAULT_CRYPTO_PANEL, load_dotenv
+from src.data import verify_crypto_panel
 from src.rft import (
     DatabaseSelectionConfig,
     MinerConfig,
@@ -33,11 +34,11 @@ DEFAULT_OUTPUT_DIR = Path("factor_lab") / "outputs" / "baseline_rollouts"
 
 def run_crypto_baseline_rollout(
     *,
-    oracle_model: str,
-    miner_model: str,
+    oracle_model: str = "deepseek/deepseek-chat-v3.1",
+    miner_model: str = "qwen/qwen3-235b-a22b-2507",
     panel_path: Path = DEFAULT_CRYPTO_PANEL,
     tickers: tuple[str, ...] | None = None,
-    oracle_count: int = 12,
+    oracle_count: int = 24,
     miner_count: int = 4,
     top_k_seeds: int = 3,
     output_dir: Path = DEFAULT_OUTPUT_DIR,
@@ -45,7 +46,7 @@ def run_crypto_baseline_rollout(
     """Run oracle seed generation plus miner baseline rollouts on crypto data."""
 
     load_dotenv()
-    panel = pd.read_pickle(panel_path)
+    panel = verify_crypto_panel(panel_path, tickers=tickers)
     frames = crypto_frames_from_panel(panel, tickers=tickers)
     close = panel["close"]
     scenario = FactorScenario.from_benchmark(
@@ -70,7 +71,7 @@ def run_crypto_baseline_rollout(
         windows=windows,
         raw_candidates=raw_candidates,
         min_history=30,
-        min_assets=max(3, min(5, len(frames))),
+        min_assets=8,
         pool_config=SeedPoolConfig(top_k=top_k_seeds, quality_threshold=-1.0),
     )
 
@@ -84,7 +85,7 @@ def run_crypto_baseline_rollout(
             price_col="close",
             count=miner_count,
             min_history=30,
-            min_assets=max(3, min(5, len(frames))),
+            min_assets=8,
             miner_config=MinerConfig(model=miner_model),
             archive=archive,
             selection_config=DatabaseSelectionConfig(min_score=-1.0, min_reward=-1.0),
@@ -143,8 +144,8 @@ def main() -> int:
     parser.add_argument("--oracle-model", default="deepseek/deepseek-chat-v3.1")
     parser.add_argument("--miner-model", default="qwen/qwen3-235b-a22b-2507")
     parser.add_argument("--crypto-panel", type=Path, default=DEFAULT_CRYPTO_PANEL)
-    parser.add_argument("--tickers", default="BTC-USD,ETH-USD,XRP-USD")
-    parser.add_argument("--oracle-count", type=int, default=12)
+    parser.add_argument("--tickers", default="ADA-USD,BNB-USD,BTC-USD,DOGE-USD,ETH-USD,LINK-USD,XLM-USD,XRP-USD")
+    parser.add_argument("--oracle-count", type=int, default=24)
     parser.add_argument("--miner-count", type=int, default=4)
     parser.add_argument("--top-k-seeds", type=int, default=3)
     parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT_DIR)

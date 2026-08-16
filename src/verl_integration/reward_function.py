@@ -63,7 +63,7 @@ def _runtime_from_metadata(metadata: dict[str, Any]) -> FactorRewardRuntime:
     panel_path = Path(os.getenv("FACTOR_LAB_CRYPTO_PANEL", "data/crypto/crypto_panel_clean.pkl"))
     tickers = tuple(
         item.strip()
-        for item in os.getenv("FACTOR_LAB_TICKERS", "BTC-USD,ETH-USD,XRP-USD").split(",")
+        for item in os.getenv("FACTOR_LAB_TICKERS", "ADA-USD,BNB-USD,BTC-USD,DOGE-USD,ETH-USD,LINK-USD,XLM-USD,XRP-USD").split(",")
         if item.strip()
     )
     frames = _load_crypto_frames(str(panel_path), tickers)
@@ -77,7 +77,7 @@ def _runtime_from_metadata(metadata: dict[str, Any]) -> FactorRewardRuntime:
         price_col="close",
         archive=archive,
         min_history=int(os.getenv("FACTOR_LAB_MIN_HISTORY", "30")),
-        min_assets=max(3, min(5, len(frames))),
+        min_assets=8,
         reward_log_jsonl=Path(reward_log) if reward_log else None,
     )
 
@@ -100,8 +100,8 @@ def _task_from_extra(extra: dict[str, Any]):
     )
     start = str(window_payload.get("start") or os.getenv("FACTOR_LAB_WINDOW_START", "2019-01-01"))
     end = str(window_payload.get("end") or os.getenv("FACTOR_LAB_WINDOW_END", "2026-06-16"))
-    seed_expr = str(extra.get("seed_expr") or "ts_mean(crypto.returns(5))")
-    seed_score = float(extra.get("seed_score") or 0.0)
+    seed_expr = str(extra.get("seed_expr") or "div(ts_mean(crypto.volume(10)), ts_std(crypto.returns(30)))")
+    seed_score = float(extra.get("seed_score") if extra.get("seed_score") is not None else 0.38385972330719526)
     return build_task_bank(
         [SeedCandidate(seed_expr, seed_score, "")],
         scenario,

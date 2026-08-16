@@ -14,10 +14,11 @@ from typing import Callable, Mapping
 
 import pandas as pd
 
-from src.evaluation import PostSelectionConfig, evaluate_factor_library
-from src.evaluation.post_selection import FusedEvaluation, write_evaluation_report
 from examples.build_seed_bank import crypto_frames_from_panel
 from examples.dsl_smoke_test import DEFAULT_CRYPTO_PANEL
+from src.data import verify_crypto_panel
+from src.evaluation import PostSelectionConfig, evaluate_factor_library
+from src.evaluation.post_selection import FusedEvaluation, write_evaluation_report
 from src.rft import MinerConfig
 from src.rft.miner import generate_miner_candidates
 from src.seeds import EvaluationWindow, FactorScenario, SeedPoolConfig, build_scenario_seed_bank
@@ -88,7 +89,7 @@ def run_compared_approaches(
 ) -> dict:
     """Run compared approaches under one DSL/evaluation protocol."""
 
-    panel = pd.read_pickle(panel_path)
+    panel = verify_crypto_panel(panel_path, tickers=tickers)
     frames = crypto_frames_from_panel(panel, tickers=tickers)
     dates = pd.DatetimeIndex(panel["close"].index).sort_values()
     split_idx = int(len(dates) * 0.7)
@@ -112,7 +113,7 @@ def run_compared_approaches(
         correlation_threshold=correlation_threshold,
         top_k=top_k,
         min_history=30,
-        min_assets=max(3, min(5, len(frames))),
+        min_assets=8,
         horizon=1,
     )
 
@@ -131,7 +132,7 @@ def run_compared_approaches(
             windows=windows,
             raw_candidates=candidates,
             min_history=30,
-            min_assets=max(3, min(5, len(frames))),
+            min_assets=8,
             pool_config=SeedPoolConfig(top_k=max(top_k, 1), quality_threshold=-1.0),
         )
         exprs = tuple(seed.expr for seed in seed_bank.seeds)
@@ -187,7 +188,7 @@ def _generate_candidates_for_approach(
             windows=[EvaluationWindow("", "")],
             raw_candidates=seeds,
             min_history=30,
-            min_assets=max(3, min(5, len(frames))),
+            min_assets=8,
             pool_config=SeedPoolConfig(top_k=3, quality_threshold=-1.0),
         )
         candidates = []
